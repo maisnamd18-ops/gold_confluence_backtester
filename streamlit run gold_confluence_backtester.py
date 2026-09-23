@@ -18,8 +18,11 @@ symbol = st.sidebar.selectbox(
          "closer to what TradingView/Binance show for XAUUSD — pick whichever "
          "matches what you're paper trading.",
 )
-days_history = st.sidebar.slider("Days of data (15m timeframe)", 5, 59, 59,
-                                  help="Yahoo Finance only serves 60 days of 15m history.")
+timeframe = st.sidebar.selectbox(
+    "Timeframe", ["5m", "15m"],
+    help="Yahoo Finance serves up to 60 days of history for both 5m and 15m bars.",
+)
+days_history = st.sidebar.slider("Days of data", 5, 59, 59)
 
 st.sidebar.header("Confluence Parameters")
 initial_capital = st.sidebar.number_input("Initial Capital ($)", value=1000.0, step=100.0)
@@ -41,8 +44,8 @@ max_trades_day = st.sidebar.number_input("Max trades per day (0 = no limit)", mi
 # DATA FETCHING
 # =====================================================================
 @st.cache_data(ttl=900)
-def get_data(sym: str, days: int) -> pd.DataFrame:
-    df = yf.download(sym, period=f"{days}d", interval="15m", progress=False)
+def get_data(sym: str, days: int, interval: str) -> pd.DataFrame:
+    df = yf.download(sym, period=f"{days}d", interval=interval, progress=False)
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.droplevel(1)
     df.dropna(inplace=True)
@@ -50,7 +53,7 @@ def get_data(sym: str, days: int) -> pd.DataFrame:
 
 try:
     with st.spinner("Fetching data and calculating confluence zones..."):
-        df = get_data(symbol, days_history)
+        df = get_data(symbol, days_history, timeframe)
 except Exception as e:
     st.error(f"Failed to fetch data for {symbol}: {e}")
     st.stop()
